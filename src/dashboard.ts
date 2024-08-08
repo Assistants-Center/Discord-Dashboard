@@ -18,6 +18,7 @@ import SwaggerPlugin from './plugins/swagger';
 import AuthRoute from './routes/auth';
 import GuildsRoute from './routes/guilds';
 import GuildOptionsRoute from './routes/options/guild';
+import UserOptionsRoute from './routes/options/user';
 
 class Dashboard {
     constructor(
@@ -85,6 +86,11 @@ class Dashboard {
             options: this.options.guild,
             prefix: '/api/options/guild',
             permissions: this.config.api.guild_management.permissions_required,
+        });
+
+        await this.fastify.register(UserOptionsRoute, {
+            options: this.options.user,
+            prefix: '/api/options/user',
         });
     }
 
