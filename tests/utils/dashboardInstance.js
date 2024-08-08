@@ -3,7 +3,12 @@ dotenv.config({
     path: `${__dirname}/../.env`,
 });
 
-const { Dashboard, FormOptionsBuilders, GroupBuilders } = require('../../dist');
+const {
+    Dashboard,
+    FormOptionsBuilders,
+    GroupBuilders,
+    ResponseStatusBuilders,
+} = require('../../dist');
 const { PermissionsBitField } = require('discord.js');
 const ConnectMongo = require('connect-mongo');
 
@@ -62,11 +67,22 @@ const dashboard = new Dashboard(
                         return 'Sample data!';
                     })
                     .onUpdate(async (user_id, guild_id, value) => {
-                        return '';
+                        return ResponseStatusBuilders.SetResponses.Ok();
                     })
-                    .onAccessCheck(async (user_id, guild_id) => true)
+                    .onAccessCheck(async (user_id, guild_id) => {
+                        return ResponseStatusBuilders.AccessControlResponses.Disallowed(
+                            true,
+                            'Sorry, you cannot use that option.',
+                        );
+                    })
                     .build(),
             ])
+            .onAccessCheck(async (user_id, guild_id) => {
+                return ResponseStatusBuilders.AccessControlResponses.Disallowed(
+                    true,
+                    'Sorry, you cannot use that category.',
+                );
+            })
             .build(),
     ]);
 

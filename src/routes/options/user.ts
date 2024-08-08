@@ -25,15 +25,49 @@ const UserOptionsRoute: FastifyPluginCallback<{
             const data: GroupResponse[] = [];
 
             const groupPromises = opts.options.map(async (group) => {
+                const hasAccessToGroup = await group.canAccess(user_id);
+                if (
+                    !hasAccessToGroup.allowed &&
+                    !hasAccessToGroup.display_in_api
+                ) {
+                    return null;
+                }
+
                 const group_data: GroupResponse = {
                     id: group.id,
                     meta: group.meta,
+                    disabled: hasAccessToGroup.allowed
+                        ? undefined
+                        : {
+                              bool: true,
+                              message: hasAccessToGroup.error.message,
+                          },
                     options: [],
                 };
 
                 const optionPromises = group.options.map(async (option) => {
                     const hasAccess = await option.canAccess(user_id);
-                    if (!hasAccess) return null;
+                    if (!hasAccess.allowed) {
+                        if (!hasAccess.display_in_api) return null;
+                        const option_data: OptionResponse<any> = {
+                            id: option.id,
+                            type: option.type,
+                            disabled: {
+                                bool: true,
+                                message: hasAccess.error.message,
+                            },
+                            meta: option.meta,
+                            value: await option.get(user_id),
+                        };
+
+                        if (!hasAccessToGroup.allowed)
+                            option_data.disabled = {
+                                bool: true,
+                                message: 'NOT_ALLOWED_GROUP_DISALLOWED',
+                            };
+
+                        return option_data;
+                    }
 
                     const option_data: OptionResponse<any> = {
                         id: option.id,
@@ -52,7 +86,11 @@ const UserOptionsRoute: FastifyPluginCallback<{
                 return group_data;
             });
 
-            data.push(...(await Promise.all(groupPromises)));
+            data.push(
+                ...(await Promise.all(groupPromises)).filter(
+                    (group) => group !== null,
+                ),
+            );
 
             return data;
         },
@@ -79,6 +117,10 @@ const UserOptionsRoute: FastifyPluginCallback<{
                         `Group with id ${groupUpdate.id} not found`,
                     );
 
+                const hasAccessToGroup = await group.canAccess(user_id);
+                if (!hasAccessToGroup.allowed)
+                    throw new Error(hasAccessToGroup.error.message);
+
                 const optionPromises = groupUpdate.options.map(
                     async (optionUpdate) => {
                         const option = group.options.find(
@@ -89,11 +131,12 @@ const UserOptionsRoute: FastifyPluginCallback<{
                                 `Option with id ${optionUpdate.id} not found`,
                             );
 
+                        if (!hasAccessToGroup.allowed)
+                            throw new Error(`NOT_ALLOWED_GROUP_DISALLOWED`);
+
                         const hasAccess = await option.canAccess(user_id);
-                        if (!hasAccess)
-                            throw new Error(
-                                `No permissions to manage option with id ${optionUpdate.id}`,
-                            );
+                        if (!hasAccess.allowed)
+                            throw new Error(hasAccess.error.message);
 
                         try {
                             await option.set(user_id, optionUpdate.value);

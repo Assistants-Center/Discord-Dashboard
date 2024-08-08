@@ -84,6 +84,7 @@ class Dashboard {
         await this.fastify.register(GuildOptionsRoute, {
             options: this.options.guild,
             prefix: '/api/options/guild',
+            permissions: this.config.api.guild_management.permissions_required,
         });
     }
 

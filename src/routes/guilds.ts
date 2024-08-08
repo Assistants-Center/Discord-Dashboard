@@ -1,30 +1,31 @@
-import { FastifyPluginCallback } from 'fastify';
+import { FastifyPluginCallback, type FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 
 import { PermissionsBitField } from 'discord.js';
 
-import axios from 'axios';
 import { Config } from '@discord-dashboard/typings/dist/Config';
 
-import type { GuildResponse } from '@discord-dashboard/typings/dist/Core/Guilds';
+import type {
+    GuildMember,
+    GuildResponse,
+} from '@discord-dashboard/typings/dist/Core/Guilds';
+import fetchWithCache from '../wrappers/cache-wrapper';
 
 const fetchUserGuilds = async (
     accessToken: string,
 ): Promise<GuildResponse[]> => {
-    try {
-        const url = 'https://discord.com/api/v10/users/@me/guilds';
+    const url = 'https://discord.com/api/users/@me/guilds';
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    return await fetchWithCache<GuildResponse[]>(url, headers);
+};
 
-        const response = await axios.get<GuildResponse[]>(url, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching user guilds:', error);
-        throw error;
-    }
+const fetchGuildDetails = async (
+    guildId: string,
+    accessToken: string,
+): Promise<GuildMember> => {
+    const url = `https://discord.com/api/users/@me/guilds/${guildId}/member`;
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    return await fetchWithCache<GuildMember>(url, headers);
 };
 
 const hasPermissionToManageGuild = (
@@ -50,7 +51,7 @@ const GuildsRoute: FastifyPluginCallback<{
             guilds.map(async (guild: GuildResponse) => {
                 try {
                     const hasPermissions = hasPermissionToManageGuild(
-                        guild.permissions,
+                        guild.permissions_new,
                         new PermissionsBitField(opts.permissions),
                     );
 
@@ -63,6 +64,27 @@ const GuildsRoute: FastifyPluginCallback<{
 
         return reply.send(guildPermissions.filter((guild) => !!guild));
     });
+
+    fastify.get(
+        `${opts.prefix}/:guild_id/member`,
+        async (
+            request: FastifyRequest<{
+                Params: {
+                    guild_id: string;
+                };
+            }>,
+            reply,
+        ): Promise<GuildMember> => {
+            if (!request.session.user) return reply.redirect('/api/auth');
+            const { guild_id } = request.params;
+
+            const guildMember = await fetchGuildDetails(
+                guild_id,
+                request.session.tokens!.access_token,
+            );
+            return reply.send(guildMember);
+        },
+    );
 
     done();
 };

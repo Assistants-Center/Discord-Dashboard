@@ -17,7 +17,7 @@ const AuthRoute: FastifyPluginCallback<{
 
     fastify.get(`${opts.prefix}`, (request, reply) => {
         const url = oauth2.generateAuthUrl({
-            scope: 'identify email',
+            scope: 'identify email guilds guilds.members.read',
         });
         reply.redirect(url);
     });
@@ -37,7 +37,7 @@ const AuthRoute: FastifyPluginCallback<{
 
             const tokens = await oauth2.tokenRequest({
                 code,
-                scope: 'identify email',
+                scope: 'identify email guilds guilds.members.read',
                 grantType: 'authorization_code',
             });
 
