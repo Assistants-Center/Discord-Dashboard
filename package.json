@@ -1,0 +1,37 @@
+{
+  "name": "@discord-dashboard/core",
+  "version": "3.0.0",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@discord-dashboard/typings": "3.0.0",
+    "@fastify/cookie": "^9.3.1",
+    "@fastify/session": "^10.9.0",
+    "@fastify/swagger": "^8.15.0",
+    "@fastify/swagger-ui": "^4.0.1",
+    "connect-mongo": "^5.1.0",
+    "fastify": "^4.28.1",
+    "fastify-plugin": "^4.5.1",
+    "mongodb": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.17",
+    "@types/jest": "^29.5.12",
+    "@types/session-file-store": "^1.2.5",
+    "axios": "^1.7.3",
+    "chai": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "express-session": "^1.18.0",
+    "jest": "^29.7.0",
+    "mocha": "^10.7.0",
+    "puppeteer": "^22.15.0",
+    "session-file-store": "^1.5.0",
+    "test-ts": "^0.0.1",
+    "ts-jest": "^29.2.4",
+    "ts-node": "^10.9.2"
+  }
+}
