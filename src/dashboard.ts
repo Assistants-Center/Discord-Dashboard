@@ -27,9 +27,7 @@ class Dashboard {
 
     private readonly fastify: FastifyInstance = Fastify();
 
-    private session_store: SessionStore = ConnectMongo.create({
-        mongoUrl: 'mongodb://localhost/dbd-development',
-    });
+    private session_store!: SessionStore;
 
     private options: {
         guild: GuildFormOptionGroup[];
