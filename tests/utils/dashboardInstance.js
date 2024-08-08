@@ -15,9 +15,6 @@ const dashboard = new Dashboard(
 
             session: {
                 secret: process.env.SESSION_SECRET,
-                cookie: {
-                    secure: false,
-                },
             },
 
             guild_management: {

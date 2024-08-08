@@ -18,12 +18,15 @@ declare module 'fastify' {
 }
 
 const AuthorizationPlugin: FastifyPluginAsync<{
-    session: Config['api']['session'];
+    api_config: Config['api'];
     store: SessionStore;
 }> = async (fastify, opts) => {
     await fastify.register(FastifyCookie);
     await fastify.register(FastifySession, {
-        ...opts.session,
+        secret: opts.api_config.session.secret,
+        cookie: {
+            secure: opts.api_config.protocol === 'https',
+        },
         store: opts.store,
     });
 };

@@ -51,7 +51,7 @@ class Dashboard {
 
     private async prepare_plugins() {
         await this.fastify.register(AuthorizationPlugin, {
-            session: this.config.api.session,
+            api_config: this.config.api,
             store: this.session_store,
         });
         await this.fastify.register(RefreshTokenPlugin, {
