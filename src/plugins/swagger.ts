@@ -1,45 +1,46 @@
 import { FastifyPluginAsync, FastifyPluginCallback } from 'fastify';
 import fp from 'fastify-plugin';
 
+import PackageInfo from '../../package.json';
+
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUI from '@fastify/swagger-ui';
+import path from 'node:path';
+import * as fs from 'node:fs';
 
 const SwaggerPlugin: FastifyPluginAsync = async (fastify, opts) => {
     await fastify.register(FastifySwagger, {
         openapi: {
             openapi: '3.0.0',
             info: {
-                title: 'Test swagger',
-                description: 'Testing the Fastify swagger API',
-                version: '0.1.0',
+                title: '@Discord-Dashboard/Core',
+                description: "This is the module instance's documentation.",
+                version: PackageInfo.version,
             },
             servers: [
                 {
                     url: 'http://localhost:3000',
-                    description: 'Development server',
+                    description: 'Discord-Dashboard Instance',
                 },
             ],
             tags: [
-                { name: 'user', description: 'User related end-points' },
-                { name: 'code', description: 'Code related end-points' },
+                { name: 'core', description: 'Core related end-points' },
+                { name: 'default', description: 'Uncategorized end-points' },
             ],
-            components: {
-                securitySchemes: {
-                    apiKey: {
-                        type: 'apiKey',
-                        name: 'apiKey',
-                        in: 'header',
-                    },
-                },
-            },
             externalDocs: {
-                url: 'https://swagger.io',
-                description: 'Find more info here',
+                url: 'https://docs.assts.tech/discord-dashboard',
+                description: 'Interested in the module documentation?',
             },
         },
     });
 
     await fastify.register(FastifySwaggerUI, {
+        logo: {
+            type: 'image/png',
+            content: fs.readFileSync(
+                path.resolve(__dirname, '../../resources/Assistants_NoBG.png'),
+            ),
+        },
         routePrefix: '/documentation',
     });
 };
