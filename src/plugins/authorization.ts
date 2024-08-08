@@ -6,9 +6,8 @@ import type { Config } from '@discord-dashboard/typings/dist/Config';
 import fp from 'fastify-plugin';
 
 import FastifyCookie from '@fastify/cookie';
-import FastifySession from '@fastify/session';
+import FastifySession, { SessionStore } from '@fastify/session';
 
-import ConnectMongo from 'connect-mongo';
 import DiscordOauth2 from 'discord-oauth2';
 
 declare module 'fastify' {
@@ -20,15 +19,12 @@ declare module 'fastify' {
 
 const AuthorizationPlugin: FastifyPluginAsync<{
     session: Config['api']['session'];
+    store: SessionStore;
 }> = async (fastify, opts) => {
     await fastify.register(FastifyCookie);
     await fastify.register(FastifySession, {
         ...opts.session,
-        // <TODO feature="Custom Session Store">
-        store: ConnectMongo.create({
-            mongoUrl: 'mongodb://localhost/dbd-development',
-        }),
-        // </TODO>
+        store: opts.store,
     });
 };
 

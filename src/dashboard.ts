@@ -1,10 +1,13 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import type { Config } from '@discord-dashboard/typings/dist/Config';
 import type { Theme } from '@discord-dashboard/typings/dist/Core/Theme';
+import type { SessionStore } from '@fastify/session';
+
 import {
     GuildFormOptionGroup,
     UserFormOptionGroup,
 } from '@discord-dashboard/typings/dist/FormOptions/FormGroup';
+import ConnectMongo from 'connect-mongo';
 
 // Plugins
 import AuthorizationPlugin from './plugins/authorization';
@@ -23,6 +26,10 @@ class Dashboard {
     ) {}
 
     private readonly fastify: FastifyInstance = Fastify();
+
+    private readonly session_store: SessionStore = ConnectMongo.create({
+        mongoUrl: 'mongodb://localhost/dbd-development',
+    });
 
     private options: {
         guild: GuildFormOptionGroup[];
@@ -45,6 +52,7 @@ class Dashboard {
     private async prepare_plugins() {
         await this.fastify.register(AuthorizationPlugin, {
             session: this.config.api.session,
+            store: this.session_store,
         });
         await this.fastify.register(RefreshTokenPlugin, {
             clientId: this.config.discord_oauth2.client_id,

@@ -29,7 +29,7 @@ const dashboard = new Dashboard(
 
         discord_oauth2: {
             client_id: process.env.DISCORD_OAUTH_CLIENT_ID,
-            client_secret: process.env.DISCORD_OAUTH_SECRET,
+            client_secret: process.env.DISCORD_OAUTH_CLIENT_SECRET,
         },
 
         assistants_technologies: {
