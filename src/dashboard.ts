@@ -27,7 +27,7 @@ class Dashboard {
 
     private readonly fastify: FastifyInstance = Fastify();
 
-    private readonly session_store: SessionStore = ConnectMongo.create({
+    private session_store: SessionStore = ConnectMongo.create({
         mongoUrl: 'mongodb://localhost/dbd-development',
     });
 
@@ -38,6 +38,11 @@ class Dashboard {
         guild: [],
         user: [],
     };
+
+    public setCustomSessionStore(sessionStore: SessionStore) {
+        this.session_store = sessionStore;
+        return this;
+    }
 
     public setUserOptions(options: UserFormOptionGroup[]): this {
         this.options.user = options;

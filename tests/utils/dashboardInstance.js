@@ -5,6 +5,7 @@ dotenv.config({
 
 const { Dashboard, FormOptionsBuilders, GroupBuilders } = require('../../dist');
 const { PermissionsBitField } = require('discord.js');
+const ConnectMongo = require('connect-mongo');
 
 const dashboard = new Dashboard(
     {
@@ -37,30 +38,36 @@ const dashboard = new Dashboard(
         name: 'ph',
         inject: async () => {},
     },
-).setGuildOptions([
-    new GroupBuilders.Guild()
-        .setId('123')
-        .setMeta({
-            name: 'Uno',
-            description: 'The first group',
-        })
-        .setOptions([
-            new FormOptionsBuilders.Guild.TextInputBuilder()
-                .setId('hey')
-                .setMeta({
-                    name: '',
-                    description: '',
-                })
-                .onRequest(async (user_id, guild_id) => {
-                    return 'Sample data!';
-                })
-                .onUpdate(async (user_id, guild_id, value) => {
-                    return '';
-                })
-                .onAccessCheck(async (user_id, guild_id) => true)
-                .build(),
-        ])
-        .build(),
-]);
+)
+    .setCustomSessionStore(
+        ConnectMongo.create({
+            mongoUrl: process.env.MONGO_URL,
+        }),
+    )
+    .setGuildOptions([
+        new GroupBuilders.Guild()
+            .setId('123')
+            .setMeta({
+                name: 'Uno',
+                description: 'The first group',
+            })
+            .setOptions([
+                new FormOptionsBuilders.Guild.TextInputBuilder()
+                    .setId('hey')
+                    .setMeta({
+                        name: '',
+                        description: '',
+                    })
+                    .onRequest(async (user_id, guild_id) => {
+                        return 'Sample data!';
+                    })
+                    .onUpdate(async (user_id, guild_id, value) => {
+                        return '';
+                    })
+                    .onAccessCheck(async (user_id, guild_id) => true)
+                    .build(),
+            ])
+            .build(),
+    ]);
 
 module.exports = dashboard;
