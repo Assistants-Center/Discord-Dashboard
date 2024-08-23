@@ -5,7 +5,8 @@
   "typings": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest"
   },
   "dependencies": {
     "@discord-dashboard/typings": "3.0.0",
@@ -16,13 +17,18 @@
     "connect-mongo": "^5.1.0",
     "fastify": "^4.28.1",
     "fastify-plugin": "^4.5.1",
-    "mongodb": "^6.8.0"
+    "mongodb": "^6.8.0",
+    "throw-http-errors": "^4.0.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/preset-typescript": "^7.24.7",
     "@types/chai": "^4.3.17",
     "@types/jest": "^29.5.12",
     "@types/session-file-store": "^1.2.5",
     "axios": "^1.7.3",
+    "babel-jest": "^29.7.0",
     "chai": "^5.1.1",
     "dotenv": "^16.4.5",
     "express-session": "^1.18.0",

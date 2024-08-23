@@ -1,4 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import errors from 'throw-http-errors';
+import ErrorCodes from '@discord-dashboard/typings/dist/Core/ErrorCodes';
 
 interface RateLimitData {
     limit: number;
@@ -24,8 +26,8 @@ const fetchWithCache = async <T>(
 ): Promise<T> => {
     const cacheEntry = cache.get(url);
 
+    // Sprawdzenie czy dane są w cache i są jeszcze ważne
     if (cacheEntry && Date.now() < cacheEntry.expiresAt) {
-        // If cache is still valid, return cached data
         return cacheEntry.data;
     }
 
@@ -42,8 +44,8 @@ const fetchWithCache = async <T>(
             scope: response.headers['x-ratelimit-scope'],
         };
 
-        // Calculate expiration time based on rate limit reset
-        const expiresAt = Date.now() + rateLimitData.resetAfter * 1000;
+        // Obliczanie czasu wygaśnięcia w zależności od limitu resetu plus dodatkowa minuta
+        const expiresAt = Date.now() + rateLimitData.resetAfter * 1000 + 60000;
 
         cache.set(url, {
             data: response.data,
@@ -55,19 +57,28 @@ const fetchWithCache = async <T>(
     } catch (error) {
         if (error instanceof AxiosError) {
             if (error.response?.status === 429) {
-                // If rate limited, throw an appropriate error
-                throw new Error('Rate limit exceeded. Please try again later.');
+                // W przypadku limitu szybkości, możemy chcieć zareagować odpowiednio
+                // Możesz także dodać logikę do przechowywania informacji o ratelimit w pamięci
+                throw new errors.TooManyRequests(
+                    'Rate limit exceeded. Please try again later.',
+                    ErrorCodes.TOO_MANY_REQUESTS,
+                );
             } else {
-                throw new Error(
-                    `Request failed with status ${error.response?.status}: ${error.message}`,
+                throw new errors.InternalServerError(
+                    error.message,
+                    ErrorCodes.INTERNAL_SERVER_ERROR,
                 );
             }
         } else if (error instanceof Error) {
-            // If the error is a generic Error
-            throw new Error(error.message);
+            throw new errors.InternalServerError(
+                error.message,
+                ErrorCodes.INTERNAL_SERVER_ERROR,
+            );
         } else {
-            // If the error is something else, rethrow it
-            throw new Error('An unknown error occurred');
+            throw new errors.InternalServerError(
+                'An unknown error occurred',
+                ErrorCodes.INTERNAL_SERVER_ERROR,
+            );
         }
     }
 };

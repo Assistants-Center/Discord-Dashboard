@@ -11,6 +11,8 @@ import type {
     OptionResponse,
 } from '@discord-dashboard/typings/dist/Core/Options';
 import { PermissionsBitField } from 'discord.js';
+import { authMiddleware } from '../../plugins/authorization';
+import { responsesSchema } from '../../plugins/swagger';
 
 const GuildOptionsRoute: FastifyPluginCallback<{
     options: GuildFormOptionGroup[];
@@ -19,6 +21,161 @@ const GuildOptionsRoute: FastifyPluginCallback<{
 }> = (fastify, opts, done) => {
     fastify.get(
         `${opts.prefix}/:guild_id`,
+        {
+            schema: {
+                security: [{ sessionId: [] }],
+                tags: ['core'],
+                params: {
+                    type: 'object',
+                    properties: {
+                        guild_id: {
+                            type: 'string',
+                            description: 'ID of the guild',
+                        },
+                    },
+                    required: ['guild_id'],
+                },
+                response: {
+                    200: {
+                        description:
+                            'Success response with group and option data',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'array',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            id: {
+                                                type: 'string',
+                                                description: 'Group ID',
+                                            },
+                                            meta: {
+                                                type: 'object',
+                                                additionalProperties: {
+                                                    type: [
+                                                        'string',
+                                                        'number',
+                                                        'boolean',
+                                                        'object',
+                                                        'array',
+                                                    ], // Acceptable types for values
+                                                },
+                                                description:
+                                                    'Metadata for the group',
+                                            },
+                                            options: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        id: {
+                                                            type: 'string',
+                                                            description:
+                                                                'Option ID',
+                                                        },
+                                                        type: {
+                                                            type: 'string',
+                                                            description:
+                                                                'Type of the option',
+                                                        },
+                                                        meta: {
+                                                            type: 'object',
+                                                            additionalProperties:
+                                                                {
+                                                                    type: [
+                                                                        'string',
+                                                                        'number',
+                                                                        'boolean',
+                                                                        'object',
+                                                                        'array',
+                                                                    ], // Acceptable types for values
+                                                                },
+                                                            description:
+                                                                'Metadata for the option',
+                                                        },
+                                                        value: {
+                                                            type: 'string',
+                                                            description:
+                                                                'Value of the option',
+                                                        },
+                                                        disabled: {
+                                                            type: 'object',
+                                                            properties: {
+                                                                bool: {
+                                                                    type: 'boolean',
+                                                                    description:
+                                                                        'Indicates if the option is disabled',
+                                                                },
+                                                                message: {
+                                                                    type: 'string',
+                                                                    description:
+                                                                        'Reason why the option is disabled',
+                                                                },
+                                                            },
+                                                            required: ['bool'],
+                                                            description:
+                                                                'Indicates if the option is disabled with a reason',
+                                                        },
+                                                    },
+                                                    required: [
+                                                        'id',
+                                                        'type',
+                                                        'meta',
+                                                        'value',
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                        required: ['id', 'meta', 'options'],
+                                    },
+                                },
+                                example: [
+                                    {
+                                        id: 'group1',
+                                        meta: {},
+                                        options: [
+                                            {
+                                                id: 'option1',
+                                                type: 'TextInput',
+                                                meta: {
+                                                    core: {},
+                                                },
+                                                value: 'g!',
+                                            },
+                                            {
+                                                id: 'option2',
+                                                type: 'TextInput',
+                                                meta: {
+                                                    core: {},
+                                                },
+                                                value: 'e',
+                                            },
+                                            {
+                                                id: 'lol',
+                                                type: 'TextInput',
+                                                disabled: {
+                                                    bool: true,
+                                                    message:
+                                                        'disallowed but a whole category could also be disallowed.',
+                                                },
+                                                meta: {
+                                                    core: {},
+                                                },
+                                                value: 'g!',
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                    401: responsesSchema['401'],
+                    403: responsesSchema['403'],
+                },
+            },
+            preHandler: authMiddleware,
+        },
         async (
             request: FastifyRequest<{
                 Params: {
@@ -27,15 +184,8 @@ const GuildOptionsRoute: FastifyPluginCallback<{
             }>,
             reply,
         ): Promise<GroupResponse[]> => {
-            if (!request.session.user) return reply.redirect('/api/auth');
-            const user_id = request.session.user.id;
+            const user_id = request.session.user!.id;
             const { guild_id } = request.params;
-
-            // const guildMember = await fetchGuildDetails(
-            //     guild_id,
-            //     request.session.tokens!.access_token,
-            // );
-            // return reply.send(guildMember);
 
             const data: GroupResponse[] = [];
 
@@ -114,12 +264,15 @@ const GuildOptionsRoute: FastifyPluginCallback<{
                 ),
             );
 
-            return data;
+            return reply.send(data);
         },
     );
 
     fastify.post(
         `${opts.prefix}/:guild_id`,
+        {
+            preHandler: authMiddleware,
+        },
         async (
             request: FastifyRequest<{
                 Params: {
@@ -129,8 +282,7 @@ const GuildOptionsRoute: FastifyPluginCallback<{
             }>,
             reply: FastifyReply,
         ): Promise<{ [key: string]: any }> => {
-            if (!request.session.user) return reply.redirect('/api/auth');
-            const user_id = request.session.user.id;
+            const user_id = request.session.user!.id;
             const { guild_id } = request.params;
             const updateData = request.body;
 

@@ -19,12 +19,16 @@ import AuthRoute from './routes/auth';
 import GuildsRoute from './routes/guilds';
 import GuildOptionsRoute from './routes/options/guild';
 import UserOptionsRoute from './routes/options/user';
+import Logger from './logger';
 
 class Dashboard {
+    private logger!: Logger;
     constructor(
         private config: Config,
         private theme: Theme,
-    ) {}
+    ) {
+        this.logger = new Logger(config.environment);
+    }
 
     private readonly fastify: FastifyInstance = Fastify();
 
@@ -62,7 +66,10 @@ class Dashboard {
             clientId: this.config.discord_oauth2.client_id,
             clientSecret: this.config.discord_oauth2.client_secret,
         });
-        await this.fastify.register(SwaggerPlugin);
+        await this.fastify.register(SwaggerPlugin, {
+            theme_name: this.theme.name,
+            theme_version: this.theme.version,
+        });
     }
 
     private async prepare_routes() {
@@ -107,6 +114,10 @@ class Dashboard {
             port: this.config.api.port,
             host: '0.0.0.0',
         });
+    }
+
+    public async stop() {
+        await this.fastify.close();
     }
 }
 
