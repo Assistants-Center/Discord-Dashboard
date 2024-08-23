@@ -1,5 +1,5 @@
 import { GroupBuilders, getFilesFromDirectory } from '../../../../src';
-import { GuildFormOption } from '@discord-dashboard/typings/dist/FormOptions/FormOption';
+import type { GuildFormOption } from '@discord-dashboard/typings/dist/FormOptions/FormOption';
 import path from 'node:path';
 
 export default new GroupBuilders.Guild()

@@ -1,6 +1,6 @@
 import { getFilesFromDirectory } from '../../src';
 import path from 'node:path';
-import {
+import type {
     GuildFormOptionGroup,
     UserFormOptionGroup,
 } from '@discord-dashboard/typings/dist/FormOptions/FormGroup';
