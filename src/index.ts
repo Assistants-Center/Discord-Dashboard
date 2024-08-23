@@ -4,4 +4,12 @@ import GroupBuilders from './builders/GroupBuilders';
 
 import ResponseStatusBuilders from './builders/StatusBuilders';
 
-export { Dashboard, FormOptionBuilders, GroupBuilders, ResponseStatusBuilders };
+import getFilesFromDirectory from './utils/files-from-dir';
+
+export {
+    Dashboard,
+    FormOptionBuilders,
+    GroupBuilders,
+    ResponseStatusBuilders,
+    getFilesFromDirectory,
+};
