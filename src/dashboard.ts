@@ -114,10 +114,14 @@ class Dashboard {
             port: this.config.api.port,
             host: '0.0.0.0',
         });
+
+        return this;
     }
 
     public async stop() {
         await this.fastify.close();
+
+        return this;
     }
 }
 
