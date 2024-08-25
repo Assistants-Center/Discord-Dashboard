@@ -225,17 +225,19 @@ const UserOptionsRoute: FastifyPluginCallback<{
                 });
 
                 group_data.options = (await Promise.all(optionPromises)).filter(
-                    (option) => option !== null,
+                    (option): option is OptionResponse<any> => option !== null
                 );
 
                 return group_data;
             });
 
-            data.push(
-                ...(await Promise.all(groupPromises)).filter(
-                    (group) => group !== null,
-                ),
+            const results = await Promise.all(groupPromises);
+
+            const filteredGroups = results.filter(
+                (group): group is GroupResponse => group !== null
             );
+
+            data.push(...filteredGroups);
 
             return data;
         },
@@ -245,6 +247,53 @@ const UserOptionsRoute: FastifyPluginCallback<{
         `${opts.prefix}`,
         {
             preHandler: authMiddleware,
+            schema: {
+                security: [{ sessionId: [] }],
+                tags: ['core'],
+                params: {
+                    type: 'object',
+                    properties: {
+                        guild_id: { type: 'string' },
+                    },
+                    required: ['guild_id'], // Specify that guild_id is required
+                },
+                body: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', description: 'Group ID' },
+                            options: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        id: { type: 'string', description: 'Option ID' },
+                                        value: { type: 'object', description: 'Value to set' },
+                                    },
+                                    required: ['id', 'value'], // Required fields
+                                },
+                            },
+                        },
+                        required: ['id', 'options'], // Required fields
+                    },
+                },
+                response: {
+                    200: {
+                        type: 'object',
+                        additionalProperties: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string', description: 'Optional ID of the option that caused the error' },
+                                    error: { type: 'string', description: 'Error message' },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
         async (
             request: FastifyRequest<{
@@ -252,71 +301,105 @@ const UserOptionsRoute: FastifyPluginCallback<{
             }>,
             reply: FastifyReply,
         ): Promise<{ [key: string]: any }> => {
-            const user_id = request.session.user!.id;
-            const updateData = request.body;
+            interface OptionUpdate {
+                id: string;        // Option ID
+                value: any;       // Value to be set
+            }
 
-            const errorResults: { [key: string]: any } = {};
+            interface GroupUpdate {
+                id: string;       // Group ID
+                options: OptionUpdate[]; // Array of options to update
+            }
+
+            interface ErrorResponse {
+                id?: string;      // Optional ID of the option that caused the error
+                error: string;    // Error description
+            }
+
+            interface ErrorResults {
+                [groupId: string]: ErrorResponse[]; // Key is group ID, value is an array of errors
+            }
+
+// Main function
+            const user_id = request.session.user!.id;
+            const updateData: GroupUpdate[] = request.body; // Typing request body
+
+            const errorResults: ErrorResults = {}; // Change type
 
             const groupPromises = updateData.map(async (groupUpdate) => {
                 const group = opts.options.find((g) => g.id === groupUpdate.id);
-                if (!group)
-                    throw new Error(
-                        `Group with id ${groupUpdate.id} not found`,
-                    );
+                if (!group) {
+                    throw new Error(`Group with id ${groupUpdate.id} not found`);
+                }
 
                 const hasAccessToGroup = await group.canAccess(user_id);
-                if (!hasAccessToGroup.allowed)
+                if (!hasAccessToGroup.allowed) {
                     throw new Error(hasAccessToGroup.error.message);
+                }
 
-                const optionPromises = groupUpdate.options.map(
-                    async (optionUpdate) => {
-                        const option = group.options.find(
-                            (o) => o.id === optionUpdate.id,
-                        );
-                        if (!option)
-                            throw new Error(
-                                `Option with id ${optionUpdate.id} not found`,
-                            );
+                const optionPromises = groupUpdate.options.map(async (optionUpdate) => {
+                    const option = group.options.find((o) => o.id === optionUpdate.id);
+                    if (!option) {
+                        throw new Error(`Option with id ${optionUpdate.id} not found`);
+                    }
 
-                        if (!hasAccessToGroup.allowed)
-                            throw new Error(`NOT_ALLOWED_GROUP_DISALLOWED`);
+                    const hasAccess = await option.canAccess(user_id);
+                    if (!hasAccess.allowed) {
+                        return {
+                            id: option.id,
+                            error: hasAccess.error.message || "Option is not allowed for you to edit."
+                        } as ErrorResponse;
+                    }
 
-                        const hasAccess = await option.canAccess(user_id);
-                        if (!hasAccess.allowed)
-                            throw new Error(hasAccess.error.message);
-
-                        try {
-                            await option.set(user_id, optionUpdate.value);
-                        } catch (error) {
-                            return { id: option.id, error };
+                    try {
+                        const result = await option.set(user_id, optionUpdate.value);
+                        if (result.error) {
+                            // Return an error if present and the result is unsuccessful
+                            return {
+                                id: option.id,
+                                error: result.message,
+                            } as ErrorResponse; // Use 'as' to enforce the type
                         }
-                    },
-                );
+                        return null; // If no error, return null
+                    } catch (error) {
+                        return { id: option.id, error: error instanceof Error ? error.message : String(error) } as ErrorResponse; // Enforce type
+                    }
+                });
 
+                // Execute all promises and collect results
                 const optionResults = await Promise.allSettled(optionPromises);
-                const optionErrors = optionResults.filter(
-                    (result) => result.status === 'rejected',
-                );
+                const localErrors: ErrorResponse[] = optionResults.flatMap((result) => {
+                    if (result.status === 'fulfilled' && result.value) {
+                        return result.value; // Return value if fulfilled
+                    } else if (result.status === 'rejected') {
+                        const reason = result.reason as { id?: string; error: unknown };
+                        return [{
+                            id: reason.id, // Optional ID
+                            error: reason.error instanceof Error ? reason.error.message : String(reason.error),
+                        }] as ErrorResponse[];
+                    }
+                    return []; // Return an empty array
+                });
 
-                if (optionErrors.length > 0) {
-                    errorResults[group.id] = optionErrors.map((error) => ({
-                        id: error.reason.id,
-                        error: error.reason.error,
-                    }));
+                if (localErrors.length > 0) {
+                    errorResults[group.id] = errorResults[group.id] || [];
+                    errorResults[group.id].push(...localErrors); // Collecting errors
                 }
             });
 
+// Wait for all group updates and handle group-level errors
             const groupResults = await Promise.allSettled(groupPromises);
-            const groupErrors = groupResults.filter(
-                (result) => result.status === 'rejected',
-            );
+            const groupErrors = groupResults.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
 
             groupErrors.forEach((error, index) => {
                 const groupId = updateData[index].id;
                 errorResults[groupId] = errorResults[groupId] || [];
-                errorResults[groupId].push({ error: error.reason });
+                errorResults[groupId].push({
+                    error: error.reason instanceof Error ? error.reason.message : String(error.reason),
+                });
             });
 
+// Return collected error results
             return errorResults;
         },
     );
