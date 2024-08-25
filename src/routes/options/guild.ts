@@ -284,27 +284,6 @@ const GuildOptionsRoute: FastifyPluginCallback<{
                     },
                     required: ['guild_id'],
                 },
-                body: {
-                    type: 'array',
-                    items: {
-                        type: 'object',
-                        properties: {
-                            id: { type: 'string', description: 'Group ID' },
-                            options: {
-                                type: 'array',
-                                items: {
-                                    type: 'object',
-                                    properties: {
-                                        id: { type: 'string', description: 'Option ID' },
-                                        value: { type: 'object', description: 'Value to set' },
-                                    },
-                                    required: ['id', 'value'], // Required fields
-                                },
-                            },
-                        },
-                        required: ['id', 'options'], // Required fields
-                    },
-                },
                 response: {
                     200: {
                         type: 'object',
