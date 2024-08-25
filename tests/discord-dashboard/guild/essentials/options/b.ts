@@ -4,6 +4,8 @@ let a = 'a';
 
 export default new FormOptionBuilders.Guild.TextInputBuilder()
     .setId('b')
+    .setName('name')
+    .setDescription('Description')
     .onRequest(async (user_id, guild_id) => {
         return a;
     })
