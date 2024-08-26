@@ -24,15 +24,14 @@ import { Client, GatewayIntentBits } from "discord.js";
 
 class Dashboard {
     private logger!: Logger;
-    private discord_bot!: Client;
+    public readonly discord_bot: Client = new Client({
+        intents: [ GatewayIntentBits.Guilds ]
+    });
     constructor(
         private config: Config,
         private theme: Theme,
     ) {
         this.logger = new Logger(config.environment);
-        this.discord_bot = new Client({
-            intents: [ GatewayIntentBits.Guilds ]
-        });
     }
 
     private readonly fastify: FastifyInstance = Fastify();
