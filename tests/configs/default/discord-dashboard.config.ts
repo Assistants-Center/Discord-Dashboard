@@ -19,6 +19,8 @@ declare var process: {
         DISCORD_OAUTH_CLIENT_ID: string;
         DISCORD_OAUTH_CLIENT_SECRET: string;
 
+        DISCORD_BOT_TOKEN: string;
+
         ASSISTANTS_TECHNOLOGIES_TOKEN: string;
 
         SESSION_ID_COOKIE: string;
@@ -44,9 +46,15 @@ const config: Config = {
         },
     },
 
-    discord_oauth2: {
-        client_id: process.env.DISCORD_OAUTH_CLIENT_ID,
-        client_secret: process.env.DISCORD_OAUTH_CLIENT_SECRET,
+    discord: {
+        oauth2: {
+            client_id: process.env.DISCORD_OAUTH_CLIENT_ID,
+            client_secret: process.env.DISCORD_OAUTH_CLIENT_SECRET,
+        },
+
+        bot: {
+            token:  process.env.DISCORD_BOT_TOKEN,
+        },
     },
 
     assistants_technologies: {

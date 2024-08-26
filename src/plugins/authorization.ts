@@ -22,7 +22,7 @@ declare module 'fastify' {
 
 const AuthorizationPlugin: FastifyPluginAsync<{
     api_config: Config['api'];
-    store: SessionStore;
+    store?: SessionStore;
 }> = async (fastify, opts) => {
     await fastify.register(FastifyCookie);
     await fastify.register(FastifySession, {

@@ -7,7 +7,6 @@ import {
     GuildFormOptionGroup,
     UserFormOptionGroup,
 } from '@discord-dashboard/typings/dist/FormOptions/FormGroup';
-import ConnectMongo from 'connect-mongo';
 
 // Plugins
 import AuthorizationPlugin from './plugins/authorization';
@@ -21,18 +20,24 @@ import GuildOptionsRoute from './routes/options/guild';
 import UserOptionsRoute from './routes/options/user';
 import Logger from './logger';
 
+import { Client, GatewayIntentBits } from "discord.js";
+
 class Dashboard {
     private logger!: Logger;
+    private discord_bot!: Client;
     constructor(
         private config: Config,
         private theme: Theme,
     ) {
         this.logger = new Logger(config.environment);
+        this.discord_bot = new Client({
+            intents: [ GatewayIntentBits.Guilds ]
+        });
     }
 
     private readonly fastify: FastifyInstance = Fastify();
 
-    private session_store!: SessionStore;
+    private session_store?: SessionStore;
 
     private options: {
         guild: GuildFormOptionGroup[];
@@ -63,8 +68,8 @@ class Dashboard {
             store: this.session_store,
         });
         await this.fastify.register(RefreshTokenPlugin, {
-            clientId: this.config.discord_oauth2.client_id,
-            clientSecret: this.config.discord_oauth2.client_secret,
+            clientId: this.config.discord.oauth2.client_id,
+            clientSecret: this.config.discord.oauth2.client_secret,
         });
         await this.fastify.register(SwaggerPlugin, {
             theme_name: this.theme.name,
@@ -74,8 +79,8 @@ class Dashboard {
 
     private async prepare_routes() {
         await this.fastify.register(AuthRoute, {
-            clientId: this.config.discord_oauth2.client_id,
-            clientSecret: this.config.discord_oauth2.client_secret,
+            clientId: this.config.discord.oauth2.client_id,
+            clientSecret: this.config.discord.oauth2.client_secret,
             redirectUri: `${this.config.api.protocol}://${this.config.api.domain}${
                 this.config.api.port == 80 || this.config.api.port == 443
                     ? ''
@@ -106,6 +111,7 @@ class Dashboard {
     }
 
     public async start() {
+        await this.discord_bot.login(this.config.discord.bot.token);
         await this.prepare_plugins();
         await this.prepare_routes();
         await this.inject_theme();

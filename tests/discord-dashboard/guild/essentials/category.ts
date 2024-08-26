@@ -4,7 +4,7 @@ import path from 'node:path';
 
 export default new GroupBuilders.Guild()
     .setId('essentials')
-    .onAccessCheck(async (user_id, guild_id) => {
+    .onAccessCheck(async (user_id: string, guild_id: string) => {
         return ResponseStatusBuilders.AccessControlResponses.Disallowed(true, "not allowed");
     })
     .setOptions(
